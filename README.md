@@ -6,7 +6,7 @@ To solve this problem, I will have a linux server setup that will monitor differ
 
 ## Deliverables
 
-- [X] Setup server to check if service is online and responsive
+- [X] Setup server to check if service is online and responsive ( [6379562](https://github.com/emwjacobson/cs183_project/commit/6379562760bc9843d03b139e29d8e0c03323de7f) )
 - [ ] If server is down, use DigitalOcean’s API to rent a server and provision with Docker
 - [ ] Use new system to pull Docker and run docker containers
 - [ ] Update Cloudflare DNS to point to new machine
