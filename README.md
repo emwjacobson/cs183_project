@@ -13,7 +13,7 @@ To solve this problem, I will have a linux server setup that will monitor differ
 # Deliverables
 
 - [X] Setup server to check if service is online and responsive ( [6379562](https://github.com/emwjacobson/cs183_project/commit/6379562760bc9843d03b139e29d8e0c03323de7f) )
-- [X] If server is down, use DigitalOcean’s API to rent a server and provision with Docker
+- [X] If server is down, use DigitalOcean’s API to rent a server and provision with Docker ( [09028df](https://github.com/emwjacobson/cs183_project/commit/09028df0c8a28fa09a24e9546bd0f428b922b0ef) )
 - [ ] Use new system to pull Docker and run docker containers
 - [ ] Update Cloudflare DNS to point to new machine
 - [ ] Detects when my home network comes back online, destroys DigitalOcean instance, and revert DNS.
