@@ -56,3 +56,4 @@ PC_SSH_FINGERPRINT=yo:ur:ss:hf:in:ge:rp:ri:nt
 
 # Todos
 
+- Move auto server renting to the DOWN portion (currently in UP for testing)
