@@ -1,35 +1,58 @@
-# CS 183 Project
+# CS183 Project
+- [CS183 Project](#cs183-project)
+- [Deliverables](#deliverables)
+- [Setup](#setup)
+  - [Prerequisites](#prerequisites)
+  - [Ping Check](#ping-check)
+- [Todos](#todos)
 
 I self-host a few different services that I would like to remain online. Because the server is located at my house, problems such as power outages, accidentally turning off the server, or internet problems can cause these services to go offline.
 
 To solve this problem, I will have a linux server setup that will monitor different services that I run. It will run minutely, either as a cron job or as a systemd service. When it detects any of the services are offline, it should automatically rent a server from a service such as DigitalOcean and provision it to have Docker installed. All of my projects run in containers, so the program should be able to get the container(s) running on the new system. My domain’s DNS (provided through Cloudflare) will also need to be updated in order to point towards the new server. Once the program determines my home’s network is back online, it will be responsible for destroying rented servers and changing DNS back to the original addresses.
 
-## Deliverables
+# Deliverables
 
 - [X] Setup server to check if service is online and responsive ( [6379562](https://github.com/emwjacobson/cs183_project/commit/6379562760bc9843d03b139e29d8e0c03323de7f) )
-- [ ] If server is down, use DigitalOcean’s API to rent a server and provision with Docker
+- [X] If server is down, use DigitalOcean’s API to rent a server and provision with Docker
 - [ ] Use new system to pull Docker and run docker containers
 - [ ] Update Cloudflare DNS to point to new machine
 - [ ] Detects when my home network comes back online, destroys DigitalOcean instance, and revert DNS.
 
-## Setup
+# Setup
 
-### Ping Check
+## Prerequisites
 
-Ping Check runs on the machine that you want to use to monitor your application. It should obviously be outside of the network/machine that you want to monitor as if the internet or server is down, the ping check will probably not work too.
+The following packages must be installed.
 
-To use ping check, you need to set one environmental variable, `PC_REMOTE_IP`
+`jq` - Bash Parsing of JSON
 
-`export PC_REMOTE_IP=your.ip.addr.ess`
+## Ping Check
 
-This should be put in a `bashrc` file if running manually. If the script is used from a crontab, then you will need to modify the crontab as follows.
+Ping Check runs on the machine that you want to use to monitor your application. It should obviously be outside of the network/machine that you want to monitor as if the internet or server is down, the ping check will probably be down too.
+
+To make sure that the ping check program can remote into the rented machine, SSH keys need to be setup with DigitalOcean. This can be done by running `ssh-keygen` and uploading your public key to DigitalOcean under `Settings > Security`. After adding, you should get an SSH Fingerprint, this is used in the next step.
+
+You need to set three environmental variables: `PC_REMOTE_IP`, `DIGITALOCEAN_TOKEN`, and `PC_SSH_FINGERPRINT`
+
+```
+export PC_REMOTE_IP=your.ip.addr.ess
+export DIGITALOCEAN_TOKEN=YoUrDiGiTaLoCeAnToKeN
+export PC_SSH_FINGERPRINT=yo:ur:ss:hf:in:ge:rp:ri:nt
+```
+
+This should be put in a `bashrc` file if running manually.
+
+If the script is used from a crontab, then you will need to modify the crontab as follows.
 
 ```
 # Add this environmental variable to the header of your crontab file
 PC_REMOTE_IP=your.ip.addr.ess
+DIGITALOCEAN_TOKEN=YoUrDiGiTaLoCeAnToKeN
+PC_SSH_FINGERPRINT=yo:ur:ss:hf:in:ge:rp:ri:nt
 
 # Add script to the crontab
 * * * * * /path/to/check.sh
 ```
 
+# Todos
 
