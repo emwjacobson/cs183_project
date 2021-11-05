@@ -6,8 +6,30 @@ To solve this problem, I will have a linux server setup that will monitor differ
 
 ## Deliverables
 
-- [ ] Setup server to check if service is online and responsive
+- [X] Setup server to check if service is online and responsive
 - [ ] If server is down, use DigitalOcean’s API to rent a server and provision with Docker
 - [ ] Use new system to pull Docker and run docker containers
 - [ ] Update Cloudflare DNS to point to new machine
 - [ ] Detects when my home network comes back online, destroys DigitalOcean instance, and revert DNS.
+
+## Setup
+
+### Ping Check
+
+Ping Check runs on the machine that you want to use to monitor your application. It should obviously be outside of the network/machine that you want to monitor as if the internet or server is down, the ping check will probably not work too.
+
+To use ping check, you need to set one environmental variable, `PC_REMOTE_IP`
+
+`export PC_REMOTE_IP=your.ip.addr.ess`
+
+This should be put in a `bashrc` file if running manually. If the script is used from a crontab, then you will need to modify the crontab as follows.
+
+```
+# Add this environmental variable to the header of your crontab file
+PC_REMOTE_IP=your.ip.addr.ess
+
+# Add script to the crontab
+* * * * * /path/to/check.sh
+```
+
+
