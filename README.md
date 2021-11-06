@@ -4,7 +4,7 @@
 - [Setup](#setup)
   - [Prerequisites](#prerequisites)
   - [Ping Check](#ping-check)
-- [Todos](#todos)
+- [Current Todos](#current-todos)
 
 I self-host a few different services that I would like to remain online. Because the server is located at my house, problems such as power outages, accidentally turning off the server, or internet problems can cause these services to go offline.
 
@@ -14,9 +14,9 @@ To solve this problem, I will have a linux server setup that will monitor differ
 
 - [X] Setup server to check if service is online and responsive ( [6379562](https://github.com/emwjacobson/cs183_project/commit/6379562760bc9843d03b139e29d8e0c03323de7f) )
 - [X] If server is down, use DigitalOcean’s API to rent a server and provision with Docker ( [09028df](https://github.com/emwjacobson/cs183_project/commit/09028df0c8a28fa09a24e9546bd0f428b922b0ef) )
-- [ ] Use new system to pull Docker and run docker containers
-- [ ] Update Cloudflare DNS to point to new machine
-- [ ] Detects when my home network comes back online, destroys DigitalOcean instance, and revert DNS.
+- [IP] Use new system to pull Docker and run docker containers (  )
+- [ ] Update Cloudflare DNS to point to new machine (  )
+- [ ] Detects when my home network comes back online, destroys DigitalOcean instance, and revert DNS. (  )
 
 # Setup
 
@@ -54,6 +54,6 @@ PC_SSH_FINGERPRINT=yo:ur:ss:hf:in:ge:rp:ri:nt
 * * * * * /path/to/check.sh
 ```
 
-# Todos
+# Current Todos
 
 - Move auto server renting to the DOWN portion (currently in UP for testing)
