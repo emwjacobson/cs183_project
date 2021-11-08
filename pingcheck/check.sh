@@ -5,7 +5,6 @@
 NUM_DNS_ENTRIES=2
 CLOUDFLARE_DNS_NAMES=(emwj.dev www.emwj.dev)
 CLOUDFLARE_DNS_IDS=(asdIDforEMWJdevdsa fooIDforWWWemwjDEVbar)
-CONTAINER_NAME=yeasy/simple-web:latest
 
 function help_variables {
   if [ -z "$PC_REMOTE_IP" ]; then
@@ -54,8 +53,8 @@ if [ $? -eq 0 ]; then
     # We have a server already rented, or in the process of being rented
     echo "Server already rented"
     LINES=`wc -l < .pc_recovery`
-    if [ $LINES -eq 2 ]; then
-      # If there are 2 lines, then we know recovery has fully completed # TODO: Change this in future
+    if [ $LINES -eq 3 ]; then
+      # If there are 3 lines, then we know recovery has fully completed # TODO: Change this in future
       read -d'\n' DROPLET_ID DROPLET_IP < .pc_recovery
       echo -n "Deleting droplet $DROPLET_ID at $DROPLET_IP... "
       RES=`curl -s -X DELETE \
@@ -70,17 +69,18 @@ if [ $? -eq 0 ]; then
         -H "Authorization: Bearer $CLOUDFLARE_TOKEN" \
         -H "Content-Type:application/json" \
         -d "{\"value\": \"strict\"}" \
-        "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/settings/ssl"
+        "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/settings/ssl" > /dev/null 2>&1
+
       for i in `seq 0 $(expr $NUM_DNS_ENTRIES - 1)`; do
         curl -X PUT \
           -H "Authorization: Bearer $CLOUDFLARE_TOKEN" \
           -H "Content-Type:application/json" \
           -d "{\"type\": \"A\", \"name\": \"${CLOUDFLARE_DNS_NAMES[$i]}\", \"content\": \"$PC_REMOTE_IP\", \"ttl\": 1, \"proxied\": true}" \
-          "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/${CLOUDFLARE_DNS_IDS[$i]}"
+          "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/${CLOUDFLARE_DNS_IDS[$i]}" > /dev/null 2>&1
       done
       echo "Done!"
     else
-      # If there are not 2 lines, then recovery is still in progress, do nothing
+      # If there are not 3 lines, then recovery is still in progress, do nothing
       echo "Recovery still in progress, need to wait for completion before stopping..."
     fi
   else
@@ -143,16 +143,18 @@ else
         -H "Authorization: Bearer $CLOUDFLARE_TOKEN" \
         -H "Content-Type:application/json" \
         -d "{\"value\": \"flexible\"}" \
-        "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/settings/ssl"
+        "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/settings/ssl" > /dev/null 2>&1
 
     for i in `seq 0 $(expr $NUM_DNS_ENTRIES - 1)`; do
       curl -X PUT \
         -H "Authorization: Bearer $CLOUDFLARE_TOKEN" \
         -H "Content-Type:application/json" \
         -d "{\"type\": \"A\", \"name\": \"${CLOUDFLARE_DNS_NAMES[$i]}\", \"content\": \"$DROPLET_IP\", \"ttl\": 1, \"proxied\": true}" \
-        "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/${CLOUDFLARE_DNS_IDS[$i]}"
+        "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/${CLOUDFLARE_DNS_IDS[$i]}" > /dev/null 2>&1
     done
     echo "Done!"
+
+    echo "DONE" >> .pc_recovery
 
   fi
 fi
