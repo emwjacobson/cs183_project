@@ -2,6 +2,9 @@
 
 # set -x
 
+NUM_DNS_ENTRIES=2
+CLOUDFLARE_DNS_NAMES=(emwj.dev www.emwj.dev)
+CLOUDFLARE_DNS_IDS=(asdIDforEMWJdevdsa fooIDforWWWemwjDEVbar)
 CONTAINER_NAME=yeasy/simple-web:latest
 
 function help_variables {
@@ -51,9 +54,9 @@ if [ $? -eq 0 ]; then
     # We have a server already rented, or in the process of being rented
     echo "Server already rented"
     LINES=`wc -l < .pc_recovery`
-    if [ $LINES -eq 3 ]; then
-      # If there are 3 lines, then we know recovery has fully completed # TODO: Change this in future
-      read -d'\n' DROPLET_ID DROPLET_IP CONTAINER_ID < .pc_recovery
+    if [ $LINES -eq 2 ]; then
+      # If there are 2 lines, then we know recovery has fully completed # TODO: Change this in future
+      read -d'\n' DROPLET_ID DROPLET_IP < .pc_recovery
       echo -n "Deleting droplet $DROPLET_ID at $DROPLET_IP... "
       RES=`curl -s -X DELETE \
       -H "Content-Type: application/json" \
@@ -62,9 +65,22 @@ if [ $? -eq 0 ]; then
       rm .pc_recovery
       echo "Done"
 
-      # TODO: Restore DNS
+      echo -n "Restoring DNS records... "
+      curl -X PATCH \
+        -H "Authorization: Bearer $CLOUDFLARE_TOKEN" \
+        -H "Content-Type:application/json" \
+        -d "{\"value\": \"strict\"}" \
+        "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/settings/ssl"
+      for i in `seq 0 $(expr $NUM_DNS_ENTRIES - 1)`; do
+        curl -X PUT \
+          -H "Authorization: Bearer $CLOUDFLARE_TOKEN" \
+          -H "Content-Type:application/json" \
+          -d "{\"type\": \"A\", \"name\": \"${CLOUDFLARE_DNS_NAMES[$i]}\", \"content\": \"$PC_REMOTE_IP\", \"ttl\": 1, \"proxied\": true}" \
+          "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/${CLOUDFLARE_DNS_IDS[$i]}"
+      done
+      echo "Done!"
     else
-      # If there are not 3 lines, then recovery is still in progress, do nothing
+      # If there are not 2 lines, then recovery is still in progress, do nothing
       echo "Recovery still in progress, need to wait for completion before stopping..."
     fi
   else
@@ -111,17 +127,32 @@ else
     # Add ssh keys to known_hosts
     ssh-keyscan -H $DROPLET_IP 2>/dev/null >> ~/.ssh/known_hosts
 
-    # Pull image
-    echo -n "Pulling docker image... "
-    ssh root@$DROPLET_IP "docker pull $CONTAINER_NAME" > /dev/null
+    echo -n "Cloning portfolio... "
+    ssh root@$DROPLET_IP "git clone https://github.com/emwjacobson/emwj.dev" > /dev/null 2>&1
     echo "Done!"
 
-    # Run image
-    echo -n "Starting container... "
-    CONTAINER_ID=`ssh root@$DROPLET_IP "docker run --rm -d -p 80:80 $CONTAINER_NAME"`
+    echo -n "Configuring and running docker-compose... "
+    ssh root@$DROPLET_IP "sed -i \"s/MakeThisALongRandomStringForProduction/$(openssl rand -hex 25)/\" emwj.dev/docker-compose.yml; \
+                         sed -i \"s/your.website.com,subdomain.website.com/emwj.dev,www.emwj.dev/\" emwj.dev/docker-compose.yml; \
+                         sed -i 's/8081:80/80:80/' emwj.dev/docker-compose.yml; \
+                         docker-compose -p portfolio -f emwj.dev/docker-compose.yml up --build -d;" > /dev/null 2>&1
     echo "Done!"
-    echo $CONTAINER_ID >> .pc_recovery
 
-    # TODO: Change DNS
+    echo -n "Updating DNS records... "
+    curl -X PATCH \
+        -H "Authorization: Bearer $CLOUDFLARE_TOKEN" \
+        -H "Content-Type:application/json" \
+        -d "{\"value\": \"flexible\"}" \
+        "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/settings/ssl"
+
+    for i in `seq 0 $(expr $NUM_DNS_ENTRIES - 1)`; do
+      curl -X PUT \
+        -H "Authorization: Bearer $CLOUDFLARE_TOKEN" \
+        -H "Content-Type:application/json" \
+        -d "{\"type\": \"A\", \"name\": \"${CLOUDFLARE_DNS_NAMES[$i]}\", \"content\": \"$DROPLET_IP\", \"ttl\": 1, \"proxied\": true}" \
+        "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/${CLOUDFLARE_DNS_IDS[$i]}"
+    done
+    echo "Done!"
+
   fi
 fi

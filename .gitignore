@@ -1,2 +1,4 @@
 .vscode
 pingcheck/spit.sh
+pingcheck/playground.sh
+.pc_recovery
