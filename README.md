@@ -97,6 +97,7 @@ PC_REMOTE_IP=your.ip.addr.ess
 DIGITALOCEAN_TOKEN=YoUrDiGiTaLoCeAnToKeN
 PC_SSH_FINGERPRINT=yo:ur:ss:hf:in:ge:rp:ri:nt
 CLOUDFLARE_TOKEN=YoUrClOuDfLaReToKeN
+CLOUDFLARE_ZONE_ID=YoUrClOuDfLaReZoNeId
 
 # Add script to the crontab
 * * * * * /path/to/check.sh
