@@ -2,3 +2,4 @@
 pingcheck/spit.sh
 pingcheck/playground.sh
 .pc_recovery
+recovery.log

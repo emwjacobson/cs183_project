@@ -42,7 +42,7 @@ DATA='{
 }'
 
 # Check if server is up by pinging it
-ping -c 1 $PC_REMOTE_IP > /dev/null
+ping -c 1 $PC_REMOTE_IP >> recovery.log 2>&1
 
 if [ $? -eq 0 ]; then
   # SERVER IS UP
@@ -69,14 +69,14 @@ if [ $? -eq 0 ]; then
         -H "Authorization: Bearer $CLOUDFLARE_TOKEN" \
         -H "Content-Type:application/json" \
         -d "{\"value\": \"strict\"}" \
-        "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/settings/ssl" > /dev/null 2>&1
+        "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/settings/ssl" >> recovery.log 2>&1
 
       for i in `seq 0 $(expr $NUM_DNS_ENTRIES - 1)`; do
         curl -X PUT \
           -H "Authorization: Bearer $CLOUDFLARE_TOKEN" \
           -H "Content-Type:application/json" \
           -d "{\"type\": \"A\", \"name\": \"${CLOUDFLARE_DNS_NAMES[$i]}\", \"content\": \"$PC_REMOTE_IP\", \"ttl\": 1, \"proxied\": true}" \
-          "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/${CLOUDFLARE_DNS_IDS[$i]}" > /dev/null 2>&1
+          "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/${CLOUDFLARE_DNS_IDS[$i]}" >> recovery.log 2>&1
       done
       echo "Done!"
     else
@@ -120,6 +120,22 @@ else
     echo Droplet IP: $DROPLET_IP
     echo $DROPLET_IP >> .pc_recovery
 
+    echo -n "Updating DNS records... "
+    curl -X PATCH \
+        -H "Authorization: Bearer $CLOUDFLARE_TOKEN" \
+        -H "Content-Type:application/json" \
+        -d "{\"value\": \"flexible\"}" \
+        "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/settings/ssl" >> recovery.log 2>&1
+
+    for i in `seq 0 $(expr $NUM_DNS_ENTRIES - 1)`; do
+      curl -X PUT \
+        -H "Authorization: Bearer $CLOUDFLARE_TOKEN" \
+        -H "Content-Type:application/json" \
+        -d "{\"type\": \"A\", \"name\": \"${CLOUDFLARE_DNS_NAMES[$i]}\", \"content\": \"$DROPLET_IP\", \"ttl\": 1, \"proxied\": true}" \
+        "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/${CLOUDFLARE_DNS_IDS[$i]}" >> recovery.log 2>&1
+    done
+    echo "Done!"
+
     # Need to wait to allow the machine to finish fully provisioning itself and letting SSH come up...
     echo "Waiting 90 seconds..."
     sleep 90
@@ -128,30 +144,14 @@ else
     ssh-keyscan -H $DROPLET_IP 2>/dev/null >> ~/.ssh/known_hosts
 
     echo -n "Cloning portfolio... "
-    ssh root@$DROPLET_IP "git clone https://github.com/emwjacobson/emwj.dev" > /dev/null 2>&1
+    ssh root@$DROPLET_IP "git clone https://github.com/emwjacobson/emwj.dev" >> recovery.log 2>&1
     echo "Done!"
 
     echo -n "Configuring and running docker-compose... "
     ssh root@$DROPLET_IP "sed -i \"s/MakeThisALongRandomStringForProduction/$(openssl rand -hex 25)/\" emwj.dev/docker-compose.yml; \
                          sed -i \"s/your.website.com,subdomain.website.com/emwj.dev,www.emwj.dev/\" emwj.dev/docker-compose.yml; \
                          sed -i 's/8081:80/80:80/' emwj.dev/docker-compose.yml; \
-                         docker-compose -p portfolio -f emwj.dev/docker-compose.yml up --build -d;" > /dev/null 2>&1
-    echo "Done!"
-
-    echo -n "Updating DNS records... "
-    curl -X PATCH \
-        -H "Authorization: Bearer $CLOUDFLARE_TOKEN" \
-        -H "Content-Type:application/json" \
-        -d "{\"value\": \"flexible\"}" \
-        "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/settings/ssl" > /dev/null 2>&1
-
-    for i in `seq 0 $(expr $NUM_DNS_ENTRIES - 1)`; do
-      curl -X PUT \
-        -H "Authorization: Bearer $CLOUDFLARE_TOKEN" \
-        -H "Content-Type:application/json" \
-        -d "{\"type\": \"A\", \"name\": \"${CLOUDFLARE_DNS_NAMES[$i]}\", \"content\": \"$DROPLET_IP\", \"ttl\": 1, \"proxied\": true}" \
-        "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/${CLOUDFLARE_DNS_IDS[$i]}" > /dev/null 2>&1
-    done
+                         docker-compose -p portfolio -f emwj.dev/docker-compose.yml up --build -d;" >> recovery.log 2>&1
     echo "Done!"
 
     echo "DONE" >> .pc_recovery
