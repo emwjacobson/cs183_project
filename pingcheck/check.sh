@@ -137,8 +137,23 @@ else
     echo "Done!"
 
     # Need to wait to allow the machine to finish fully provisioning itself and letting SSH come up...
-    echo "Waiting 90 seconds..."
-    sleep 90
+    echo -n "Waiting for droplet to boot..."
+    while true; do
+        RES=`curl -s -X GET \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $DIGITALOCEAN_TOKEN" \
+        https://api.digitalocean.com/v2/droplets/$DROPLET_ID`
+
+        STATUS=$(echo $RES | jq -r '.droplet.status')
+
+        if [ "$STATUS" == 'active' ]; then
+          break
+        fi
+        echo -n '.'
+        sleep 5
+    done
+    echo "Done!"
+    sleep 20
 
     # Add ssh keys to known_hosts
     ssh-keyscan -H $DROPLET_IP 2>/dev/null >> ~/.ssh/known_hosts
